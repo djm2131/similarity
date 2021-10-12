@@ -155,6 +155,50 @@ class EuclideanDistance(Distance):
 
 
 @tf.keras.utils.register_keras_serializable(package="Similarity")
+class ModifiedEuclideanDistance(Distance):
+    """Compute pairwise euclidean distances between embeddings.
+    Assumes last element of embedding vector is output of adjustment network.
+
+    The [Euclidean Distance](https://en.wikipedia.org/wiki/Euclidean_distance)
+    is the standard distance to measure the line segment between two embeddings
+    in the Cartesian point. The larger the distance the more dissimilar
+    the embeddings are.
+
+    **Alias**: L2 Norm, Pythagorean
+    """
+    def __init__(self):
+        "Init Modified Euclidean distance"
+        super().__init__('euclidean', ['l2', 'pythagorean'])
+
+    @tf.function
+    def call(self, embeddings: FloatTensor) -> FloatTensor:
+        """Compute pairwise distances for a given batch of embeddings.
+
+        Args:
+            embeddings: Embeddings to compute the pairwise one.
+
+        Returns:
+            FloatTensor: Pairwise distance tensor.
+        """
+        squared_norm = tf.math.square(embeddings)
+        squared_norm = tf.math.reduce_sum(squared_norm, axis=1, keepdims=True)
+
+        distances: FloatTensor = 2.0 * tf.linalg.matmul(
+            embeddings[:,:-1], embeddings[:,:-1], transpose_b=True)
+        distances = squared_norm - distances + tf.transpose(squared_norm)
+
+        # Avoid NaN and inf gradients when back propagating through the sqrt.
+        # values smaller than 1e-18 produce inf for the gradient, and 0.0
+        # produces NaN. All values smaller than 1e-13 should produce a gradient
+        # of 1.0.
+        dist_mask = tf.math.greater_equal(distances, 1e-18)
+        distances = tf.math.maximum(distances, 1e-18)
+        distances = tf.math.sqrt(distances) * tf.cast(dist_mask, tf.float32)
+
+        return distances
+
+
+@tf.keras.utils.register_keras_serializable(package="Similarity")
 class SquaredEuclideanDistance(Distance):
     """Compute pairwise squared Euclidean distance.
 
@@ -218,6 +262,7 @@ class ManhattanDistance(Distance):
 DISTANCES = [
     InnerProductSimilarity(),
     EuclideanDistance(),
+    ModifiedEuclideanDistance(),
     SquaredEuclideanDistance(),
     ManhattanDistance(),
     CosineDistance()
