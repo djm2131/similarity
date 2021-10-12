@@ -163,12 +163,10 @@ class ModifiedEuclideanDistance(Distance):
     is the standard distance to measure the line segment between two embeddings
     in the Cartesian point. The larger the distance the more dissimilar
     the embeddings are.
-
-    **Alias**: L2 Norm, Pythagorean
     """
     def __init__(self):
         "Init Modified Euclidean distance"
-        super().__init__('euclidean', ['l2', 'pythagorean'])
+        super().__init__('modified_euclidean', ['modl2', 'modeuclidean'])
 
     @tf.function
     def call(self, embeddings: FloatTensor) -> FloatTensor:
