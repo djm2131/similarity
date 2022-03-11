@@ -46,7 +46,7 @@ def tensor2images(tensor: Tensor, size: Optional[int] = 64) -> List[str]:
         data = data * 255
 
     # cast as int so PIL accepts its
-    data = np.uint8(data)
+    data = data.astype(np.uint8)
 
     imgs_b64 = []
     for a in tqdm(data, desc="generating diplayabe images"):
@@ -116,7 +116,7 @@ def projector(embeddings: FloatTensor,
     cords = reducer.fit_transform(embeddings)
 
     # sample id
-    _idxs = [i for i in range(len(embeddings))]
+    _idxs = list(range(len(embeddings)))
 
     # labels?
     if labels is not None:

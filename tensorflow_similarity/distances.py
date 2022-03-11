@@ -79,8 +79,7 @@ class InnerProductSimilarity(Distance):
             FloatTensor: Pairwise distance tensor.
         """
 
-        tensor = tf.linalg.matmul(embeddings, embeddings, transpose_b=True)
-        sims: FloatTensor = tf.reduce_sum(tensor, axis=1, keepdims=True)
+        sims: FloatTensor = tf.linalg.matmul(embeddings, embeddings, transpose_b=True)
         return sims
 
 
@@ -100,7 +99,8 @@ class CosineDistance(Distance):
         """Compute pairwise distances for a given batch of embeddings.
 
         Args:
-            embeddings: Embeddings to compute the pairwise one.
+            embeddings: Embeddings to compute the pairwise one. The embeddings
+            are expected to be normalized.
 
         Returns:
             FloatTensor: Pairwise distance tensor.
@@ -158,7 +158,7 @@ class EuclideanDistance(Distance):
 class SquaredEuclideanDistance(Distance):
     """Compute pairwise squared Euclidean distance.
 
-    The [Sequared Euclidean Distance](https://en.wikipedia.org/wiki/Euclidean_distance#Squared_Euclidean_distance) is
+    The [Squared Euclidean Distance](https://en.wikipedia.org/wiki/Euclidean_distance#Squared_Euclidean_distance) is
     a distance that varies from 0 (similar) to infinity (dissimilar).
     """
     def __init__(self):
@@ -214,13 +214,58 @@ class ManhattanDistance(Distance):
         return distances
 
 
+@tf.keras.utils.register_keras_serializable(package="Similarity")
+class SNRDistance(Distance):
+    """
+    Computes pairwise SNR distances between embeddings.
+
+    The [Signal-to-Noise Ratio distance](https://arxiv.org/abs/1904.02616)
+    is the ratio of noise variance to the feature variance.
+    """
+    def __init__(self):
+        "Init SNR distance"
+        super().__init__('snr')
+
+    @tf.function
+    def call(self, embeddings: FloatTensor) -> FloatTensor:
+        """Compute pairwise snr distances for a given batch of embeddings.
+        SNR(i, j): anchor i and compared feature j
+        SNR(i,j) may not be equal to SNR(j, i)
+
+        Args:
+            embeddings: Embeddings to compute the pairwise one.
+
+        Returns:
+            FloatTensor: Pairwise distance tensor.
+        """
+        # Calculating feature variance for each example
+        embed_mean = tf.math.reduce_mean(embeddings, axis=1)
+        embed_square = tf.math.square(embeddings)
+        embed_sq_mean = tf.math.reduce_mean(embed_square, axis=1)
+        anchor_var = embed_sq_mean - tf.square(embed_mean)
+
+        # Calculating pairwise noise variances
+        x_rs = tf.reshape(embeddings, shape=[tf.shape(embeddings)[0], -1])
+        delta = tf.expand_dims(x_rs, axis=1) - tf.expand_dims(x_rs, axis=0)
+        delta_mean = tf.math.reduce_mean(delta, axis=2)
+        delta_sq = tf.math.square(delta)
+        delta_sq_mean = tf.math.reduce_mean(delta_sq, axis=2)
+        noise_var = delta_sq_mean - tf.square(delta_mean)
+
+        distances: FloatTensor = tf.divide(noise_var,
+                                           tf.expand_dims(anchor_var, axis=1))
+
+        return distances
+
+
 # List of implemented distances
 DISTANCES = [
     InnerProductSimilarity(),
     EuclideanDistance(),
     SquaredEuclideanDistance(),
     ManhattanDistance(),
-    CosineDistance()
+    CosineDistance(),
+    SNRDistance()
 ]
 
 
