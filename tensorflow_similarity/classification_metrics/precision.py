@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import numpy as np
 import tensorflow as tf
 
 from tensorflow_similarity.types import FloatTensor
@@ -81,10 +82,11 @@ class Precision(ClassificationMetric):
         # The following accounts for the and sets the first precision value to
         # 1.0 if the first recall and precision are both zero.
         if (tp + fp)[0] == 0.0 and len(p) > 1:
-            initial_precision = tf.constant(
-                    [tf.constant([1.0]), tf.zeros(len(p)-1)],
-                    axis=0
-            )
+            # initial_precision = tf.constant(
+            #         [tf.constant([1.0]), tf.zeros(len(p)-1)],
+            #         axis=0
+            # )
+            initial_precision = tf.constant([1.0] + np.zeros((len(p)-1)).tolist())
             p = p + initial_precision
 
         return p

@@ -38,10 +38,14 @@ class NMSLibSearch(Search):
         distance_obj: Distance = distance_canonicalizer(distance)
 
         # convert to nmslib word
+        self._modified_l2_distance = False
         if distance_obj.name == 'cosine':
             space = 'cosinesimil'
         elif distance_obj.name == 'euclidean':
             space = 'l2'
+        elif distance_obj.name == 'modified_euclidean':
+            space = 'l2'
+            self._modified_l2_distance = True
         elif distance_obj.name == 'manhattan':
             space = 'l1'
         else:
@@ -79,7 +83,10 @@ class NMSLibSearch(Search):
             Defaults to True.
 
         """
-        self._search_index.addDataPoint(idx, embedding)
+        if self._modified_l2_distance:
+            self._search_index.addDataPoint(idx, tf.concat([embedding, tf.zeros(embedding.shape[:-1] + (1,))], axis=-1))
+        else:
+            self._search_index.addDataPoint(idx, embedding)
         if build:
             self._build(verbose=verbose)
 
@@ -107,7 +114,10 @@ class NMSLibSearch(Search):
         # !addDataPoint and addDataPointBAtch have inverted parameters
         if verbose:
             print('|-Adding embeddings to index.')
-        self._search_index.addDataPointBatch(embeddings, idxs)
+        if self._modified_l2_distance:
+            self._search_index.addDataPointBatch(tf.concat([embeddings, tf.zeros(embeddings.shape[:-1] + (1,))], axis=-1), idxs)
+        else:
+            self._search_index.addDataPointBatch(embeddings, idxs)
 
         if build:
             if verbose:
@@ -125,7 +135,10 @@ class NMSLibSearch(Search):
         """
         idxs: List[int] = []
         distances: List[float] = []
-        idxs, distances = self._search_index.knnQuery(embedding, k=k)
+        if self._modified_l2_distance:
+            idxs, distances = self._search_index.knnQuery(tf.concat([embedding[:,:-1], tf.zeros((embedding.shape[0],1)), tf.reshape(embedding[:,-1],(-1,1))], axis=-1), k=k)
+        else:
+            idxs, distances = self._search_index.knnQuery(embedding, k=k)
         return idxs, distances
 
     def batch_lookup(self,
@@ -140,7 +153,10 @@ class NMSLibSearch(Search):
         batch_idxs = []
         batch_distances = []
 
-        nn = self._search_index.knnQueryBatch(embeddings, k=k)
+        if self._modified_l2_distance:
+            nn = self._search_index.knnQueryBatch(tf.concat([embeddings[:,:-1], tf.zeros((embeddings.shape[0],1)), tf.reshape(embeddings[:,-1],(-1,1))], axis=-1), k=k)
+        else:
+            nn = self._search_index.knnQueryBatch(embeddings, k=k)
         for n in nn:
             batch_idxs.append(n[0])
             batch_distances.append(n[1])
