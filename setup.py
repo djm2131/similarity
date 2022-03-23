@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+import sys
 
 from setuptools import find_packages
 from setuptools import setup
@@ -34,8 +35,19 @@ def get_version(rel_path):
     raise RuntimeError("Unable to find version string.")
 
 
+# We use the same setup.py for both tensorflow_similarity and tfsim-nightly
+# packages. The package is controlled from the argument line when building the
+# pip package.
+project_name = "tensorflow_similarity"
+if "--project_name" in sys.argv:
+    project_name_idx = sys.argv.index("--project_name")
+    project_name = sys.argv[project_name_idx + 1]
+    sys.argv.remove("--project_name")
+    sys.argv.pop(project_name_idx)
+
+
 setup(
-    name="tensorflow_similarity",
+    name=project_name,
     version=get_version("tensorflow_similarity/__init__.py"),
     description="Metric Learning for Humans",
     long_description=read("README.md"),
@@ -45,17 +57,16 @@ setup(
     url="https://github.com/tensorflow/similarity",
     license="Apache License 2.0",
     install_requires=[
-        "bokeh",
         "distinctipy",
-        "matplotlib",
         "nmslib",
+        "matplotlib",
         "numpy",
         "pandas",
         "Pillow",
         "tabulate",
-        "tensorflow>=2.4",
         "tensorflow-datasets>=4.2",
         "tqdm",
+        "bokeh",
         "umap-learn",
     ],
     extras_require={
@@ -69,10 +80,14 @@ setup(
             "pytest",
             "pytype",
             "setuptools",
+            "types-termcolor",
             "twine",
             "types-tabulate",
             "wheel",
         ],
+        "tensorflow": ["tensorflow>=2.4"],
+        "tensorflow-gpu": ["tensorflow-gpu>=2.4"],
+        "tensorflow-cpu": ["tensorflow-cpu>=2.4"],
     },
     classifiers=[
         "Development Status :: 5 - Production/Stable",

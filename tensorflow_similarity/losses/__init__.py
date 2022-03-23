@@ -21,3 +21,7 @@ from .metric_loss import MetricLoss  # noqa
 from .circle_loss import CircleLoss  # noqa
 from .multisim_loss import MultiSimilarityLoss  # noqa
 from .mueller_smola_loss import MuellerSmolaLoss
+from .simsiam import SimSiamLoss  # noqa
+from .simclr import SimCLRLoss  # noqa
+from .barlow import Barlow  # noqa
+from .softnn_loss import SoftNearestNeighborLoss  # noqa
