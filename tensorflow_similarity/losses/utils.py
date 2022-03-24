@@ -179,3 +179,44 @@ def logsumexp(pairwise_distances: FloatTensor,
     x = tf.math.add(x, my_max)
 
     return x
+
+@tf.keras.utils.register_keras_serializable(package="Similarity")
+@tf.function
+def global_orthogonal_regularization(labels: IntTensor, embeddings: FloatTensor) -> Any:
+    """Computes the global orthogonal regularization loss introduced in https://arxiv.org/abs/1708.06320
+
+    Args:
+        labels: labels associated with the embeddings
+        embeddings: embedded examples
+
+    Returns:
+        loss: regularization loss for the current batch
+    """
+
+    # [Label]
+    batch_size = tf.size(labels)
+    d_embedding = embeddings.shape[-1]
+
+    # [mask]
+    _, mask = build_masks(labels, batch_size)
+    mask = tf.cast(mask, dtype=tf.float32)
+    n_neg_pairs = tf.reduce_sum(mask)
+
+    # [compute dot products]
+    dots_M1 = tf.linalg.matvec(embeddings, embeddings) # matrix of dot products between all pairs ofembedding vectors
+    dots_M2 = tf.math.square(dots_M1)                  # square to get the second moment
+
+    # [mask positive samples]
+    masked_dots_M1 = tf.math.multiply(dots_M1, mask)
+    masked_dots_M2 = tf.math.multiply(dots_M2, mask)
+
+    # [compute moments]
+    M1 = tf.reduce_sum(masked_dots_M1) / n_neg_pairs   # \sum_i <x_i,x.T_i> / N for neg. examples
+    M2 = tf.reduce_sum(masked_dots_M2) / n_neg_pairs   # \sum_i <x_i,x.T_i>**2 / N for neg. examples
+
+    # [loss]
+    M1_loss = tf.math.square(M1)
+    M2_loss = tf.math.subtract(M2, 1.0/d_embedding)
+    M2_loss = tf.maximum(M2_loss, 0.0)
+
+    return tf.math.add(M1_loss, M2_loss)
