@@ -14,8 +14,8 @@
 """Utility functions for computing the metric loss."""
 
 import tensorflow as tf
-from tensorflow_similarity.algebra import masked_max, masked_min
-from tensorflow_similarity.types import FloatTensor, BoolTensor
+from tensorflow_similarity.algebra import build_masks, masked_max, masked_min
+from tensorflow_similarity.types import FloatTensor, BoolTensor, IntTensor
 from typing import Any, Tuple
 
 
