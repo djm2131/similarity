@@ -19,7 +19,7 @@ from typing import Any, List, Mapping, Sequence, Optional
 from distinctipy import distinctipy
 import numpy as np
 import PIL
-import umap
+# import umap
 from bokeh.plotting import ColumnDataSource, figure, show, output_notebook
 from tqdm.auto import tqdm
 
@@ -111,97 +111,97 @@ def projector(embeddings: FloatTensor,
     """
 
     print("perfoming projection using UMAP")
-    reducer = umap.UMAP(densmap=densmap)
-    # FIXME: 2d vs 3d
-    cords = reducer.fit_transform(embeddings)
-
-    # sample id
-    _idxs = list(range(len(embeddings)))
-
-    # labels?
-    if labels is not None:
-        # if labels are already names just use them.
-        if isinstance(labels[0], str):
-            _labels = labels
-        else:
-            _labels = [int(i) for i in labels]
-    else:
-        # treat each examples as its own class
-        _labels = _idxs
-
-    # class name mapping?
-    if class_mapping:
-        _labels_txt = [class_mapping[i] for i in _labels]
-    else:
-        _labels_txt = [str(i) for i in _labels]
-
-    class_list = sorted(set(_labels_txt))
-    num_classes = len(class_list)
-
-    # generate data
-    data = dict(
-        id=_idxs,
-        x=[i[0] for i in cords],
-        y=[i[1] for i in cords],
-        labels=_labels,
-        labels_txt=_labels_txt,
-    )
-
-    # colors if needed
-    if labels is not None and colorize:
-        # generate colors
-        colors = {}
-        for idx, c in enumerate(
-                distinctipy.get_colors(num_classes,
-                                       pastel_factor=pastel_factor)):
-            # this is needed as labels can be strings or int or else
-            cls_id = class_list[idx]
-            colors[cls_id] = distinctipy.get_hex(c)
-
-        # map point to their color
-        _colors = [colors[i] for i in _labels_txt]
-        data['colors'] = _colors
-    else:
-        _colors = []
-
-    # building custom tooltips
-    tooltips = '<div style="border:1px solid #ABABAB">'
-
-    if images is not None:
-        imgs = tensor2images(images, image_size)
-        data['imgs'] = imgs
-        # have to write custom tooltip html.
-        tooltips += '<center><img src="@imgs"/></center>'  # noqa
-
-    # adding user info
-    if tooltips_info:
-        for k, v in tooltips_info.items():
-            data[k] = v
-            tooltips += "%s:@%s <br>" % (k, k)
-
-    tooltips += 'Class:@labels_txt <br>ID:@id </div>'
-
-    # to bokeh format
-    source = ColumnDataSource(data=data)
-    output_notebook()
-    fig = figure(tooltips=tooltips,
-                 plot_width=plot_size,
-                 plot_height=plot_size,
-                 active_drag=active_drag,
-                 active_scroll="wheel_zoom")
-
-    # remove grid and axis
-    fig.xaxis.visible = False
-    fig.yaxis.visible = False
-    fig.xgrid.visible = False
-    fig.ygrid.visible = False
-
-    # draw points
-    if len(_colors):
-        fig.circle('x', 'y', size=pt_size, color='colors', source=source)
-    else:
-        fig.circle('x', 'y', size=pt_size, source=source)
-
-    # render
-    output_notebook()
-    show(fig, notebook_handle=True)
+#     reducer = umap.UMAP(densmap=densmap)
+#     # FIXME: 2d vs 3d
+#     cords = reducer.fit_transform(embeddings)
+#
+#     # sample id
+#     _idxs = list(range(len(embeddings)))
+#
+#     # labels?
+#     if labels is not None:
+#         # if labels are already names just use them.
+#         if isinstance(labels[0], str):
+#             _labels = labels
+#         else:
+#             _labels = [int(i) for i in labels]
+#     else:
+#         # treat each examples as its own class
+#         _labels = _idxs
+#
+#     # class name mapping?
+#     if class_mapping:
+#         _labels_txt = [class_mapping[i] for i in _labels]
+#     else:
+#         _labels_txt = [str(i) for i in _labels]
+#
+#     class_list = sorted(set(_labels_txt))
+#     num_classes = len(class_list)
+#
+#     # generate data
+#     data = dict(
+#         id=_idxs,
+#         x=[i[0] for i in cords],
+#         y=[i[1] for i in cords],
+#         labels=_labels,
+#         labels_txt=_labels_txt,
+#     )
+#
+#     # colors if needed
+#     if labels is not None and colorize:
+#         # generate colors
+#         colors = {}
+#         for idx, c in enumerate(
+#                 distinctipy.get_colors(num_classes,
+#                                        pastel_factor=pastel_factor)):
+#             # this is needed as labels can be strings or int or else
+#             cls_id = class_list[idx]
+#             colors[cls_id] = distinctipy.get_hex(c)
+#
+#         # map point to their color
+#         _colors = [colors[i] for i in _labels_txt]
+#         data['colors'] = _colors
+#     else:
+#         _colors = []
+#
+#     # building custom tooltips
+#     tooltips = '<div style="border:1px solid #ABABAB">'
+#
+#     if images is not None:
+#         imgs = tensor2images(images, image_size)
+#         data['imgs'] = imgs
+#         # have to write custom tooltip html.
+#         tooltips += '<center><img src="@imgs"/></center>'  # noqa
+#
+#     # adding user info
+#     if tooltips_info:
+#         for k, v in tooltips_info.items():
+#             data[k] = v
+#             tooltips += "%s:@%s <br>" % (k, k)
+#
+#     tooltips += 'Class:@labels_txt <br>ID:@id </div>'
+#
+#     # to bokeh format
+#     source = ColumnDataSource(data=data)
+#     output_notebook()
+#     fig = figure(tooltips=tooltips,
+#                  plot_width=plot_size,
+#                  plot_height=plot_size,
+#                  active_drag=active_drag,
+#                  active_scroll="wheel_zoom")
+#
+#     # remove grid and axis
+#     fig.xaxis.visible = False
+#     fig.yaxis.visible = False
+#     fig.xgrid.visible = False
+#     fig.ygrid.visible = False
+#
+#     # draw points
+#     if len(_colors):
+#         fig.circle('x', 'y', size=pt_size, color='colors', source=source)
+#     else:
+#         fig.circle('x', 'y', size=pt_size, source=source)
+#
+#     # render
+#     output_notebook()
+#     show(fig, notebook_handle=True)
